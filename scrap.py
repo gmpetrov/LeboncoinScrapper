@@ -63,7 +63,8 @@ class Scrapper:
     def scrap(self, priceLimit, *arg):
 
         # Craft the url
-        url = GLOBALS.leboncoinUrl + "+".join(arg);
+        leboncoinUrl = 'http://www.leboncoin.fr/annonces/offres/ile_de_france/?f=a&th=1&q=';
+        url = leboncoinUrl + "+".join(arg);
         
         # Parse html
         html = urlopen(url).read()
