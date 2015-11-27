@@ -10,88 +10,93 @@ from email.MIMEText import MIMEText
 
 GLOBALS = Globals();
 
-# Send a mail when there is a match
-def sendMail(title, price, url):
+class Scrapper:
 
-    fromaddr = GLOBALS.smtpServerLogin;
-    toaddr   = GLOBALS.smtpServerRecipient;
+    # Send a mail when there is a match
+    def sendMail(self, title, price, url):
 
-    # edit the message
-    msg = MIMEMultipart();
-    msg['From'] = fromaddr
-    msg['To'] = toaddr
-    msg['Subject'] = title;
+        fromaddr = GLOBALS.smtpServerLogin;
+        toaddr   = GLOBALS.smtpServerRecipient;
 
-    body = "Alert leboncoin : " + title + " " + str(price) + " euros : " + url;
-    msg.attach(MIMEText(body, 'plain'))
+        # edit the message
+        msg = MIMEMultipart();
+        msg['From'] = fromaddr
+        msg['To'] = toaddr
+        msg['Subject'] = title;
 
-    # Init the smtp server
-    server = smtplib.SMTP('smtp.gmail.com', 587)
-    server.starttls()
-    server.login(fromaddr, GLOBALS.smtpServerPasswd)  
+        body = "Alert leboncoin : " + title + " " + str(price) + " euros : " + url;
+        msg.attach(MIMEText(body, 'plain'))
 
-    # Send the mail
-    server.sendmail(fromaddr, toaddr, msg.as_string())
+        # Init the smtp server
+        server = smtplib.SMTP('smtp.gmail.com', 587)
+        server.starttls()
+        server.login(fromaddr, GLOBALS.smtpServerPasswd)  
 
-    # quit smtp server
-    server.quit()
+        # Send the mail
+        server.sendmail(fromaddr, toaddr, msg.as_string())
 
-# Save a new match
-def persist(item):
-    app = firebase.FirebaseApplication(GLOBALS.firebaseAppUrl, None)
-    result = app.post('/casque', item);
+        # quit smtp server
+        server.quit()
 
-# Get all the saved match
-def getHelmets():
-    app = firebase.FirebaseApplication(GLOBALS.firebaseAppUrl, None)
-    results = app.get('/casque', None);
-    data = json.dumps(results);
-    return json.loads(data);
+    # Save a new match
+    def persist(self, item):
+        app = firebase.FirebaseApplication(GLOBALS.firebaseAppUrl, None)
+        result = app.post('/item', item);
 
-# Check if an item already exists
-def checkIfExists(_url):
-    data = getHelmets();
-    if (data != None):
-        for key in data :
-            url = data[key]['url'];
-            if (_url == url):
-                return True;
-    return False;
-    
+    # Get all the saved match
+    def getHelmets(self):
+        app = firebase.FirebaseApplication(GLOBALS.firebaseAppUrl, None)
+        results = app.get('/item', None);
+        data = json.dumps(results);
+        return json.loads(data);
 
-url = 'http://www.leboncoin.fr/annonces/offres/ile_de_france/?f=a&th=1&q=casque+schuberth';
-html = urlopen(url).read()
-soup = BeautifulSoup.BeautifulSoup(html, "html.parser")
-results = soup.find('div',attrs={"class":u"list-lbc"}).findAll('a')
-i = 0;
+    # Check if an item already exists
+    def checkIfExists(self, _url):
+        data = self.getHelmets();
+        if (data != None):
+            for key in data :
+                url = data[key]['url'];
+                if (_url == url):
+                    return True;
+        return False;
+        
+    def scrap(self, priceLimit, *arg):
 
-# Iterating the html parsing result
-while (i < len(results)):
+        # Craft the url
+        url = GLOBALS.leboncoinUrl + "+".join(arg);
+        
+        # Parse html
+        html = urlopen(url).read()
+        soup = BeautifulSoup.BeautifulSoup(html, "html.parser")
+        results = soup.find('div',attrs={"class":u"list-lbc"}).findAll('a')
 
-    # Get the item title
-    title = results[i]['title'];
+        i = 0;
+        # Iterating the html parsing result
+        while (i < len(results)):
 
-    # Get the item price
-    div = results[i].find('div',attrs={"class":u"price"});
+            # Get the item title
+            title = results[i]['title'];
 
-    # Get the url
-    url = results[i]['href'];
-    
-    if (hasattr(div, 'string')):
-        price = div.string.strip();
-        price = int(re.search(r'\d+', price).group());
-        lowerCaseTitle = title.lower();
-        if (price <= 160 and "schuberth" in lowerCaseTitle and "c3" in lowerCaseTitle):
-            # This is a match
+            # Get the item price
+            div = results[i].find('div',attrs={"class":u"price"});
 
-            if (checkIfExists(url) == False):
-                # The item is not present in the db so it's a new one
-                
-                # save the item
-                persist({ 'title' : title, 'price' : price, 'url' : url });
+            # Get the url
+            url = results[i]['href'];
+        
+            if (hasattr(div, 'string')):
+                price = div.string.strip();
+                price = int(re.search(r'\d+', price).group());
+                lowerCaseTitle = title.lower();
+                if (price <= priceLimit and all(param in lowerCaseTitle for param in arg)):
+                    # This is a match
 
-                # Send a notification
-                sendMail(title, price, url)
-    i += 1;
+                    if (self.checkIfExists(url) == False):
+                        # The item is not present in the db so it's a new one
+                    
+                        # save the item
+                        self.persist({ 'title' : title, 'price' : price, 'url' : url });
 
+                        # Send a notification
+                        self.sendMail(title, price, url)
+            i += 1;
 
