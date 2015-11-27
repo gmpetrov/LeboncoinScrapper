@@ -20,6 +20,8 @@ class Globals():
     firebaseAppUrl      = "YOU_FIREBASE_IO_URL";
 ```
 
+##### Finaly use it
+
 ```python
 # import scrapper object from scrap.py
 from scrap import Scrapper
