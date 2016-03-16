@@ -11,13 +11,16 @@ sudo pip install requests==1.1.0
 sudo pip install python-firebase
 ```
 
-##### Then create a little conf file for retrieving credentials, name it : params.py 
+##### Then create a little conf file for retrieving credentials, name it : params.py
 ```python
 class Globals():
-    smtpServerLogin     = "SENDER_ACCOUNT_LOGIN@gmail.com";
-    smtpServerPasswd    = "SENDER_ACCOUNT_PASSWORD";
-    smtpServerRecipient = "RECIPIENT_EMAIL";
-    firebaseAppUrl      = "YOU_FIREBASE_IO_URL";
+    smtpServerLogin     = "SENDER_ACCOUNT_LOGIN@gmail.com"
+    smtpServerPasswd    = "SENDER_ACCOUNT_PASSWORD"
+    smtpServerRecipient = "RECIPIENT_EMAIL"
+    firebaseAppUrl      = "YOU_FIREBASE_IO_URL"
+
+    # Optional : receive sms if you have a FreeMobile account
+    freeMobileApi       = "https://smsapi.free-mobile.fr/USER_DATA"
 ```
 
 ##### Finaly use it
