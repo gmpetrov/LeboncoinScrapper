@@ -6,9 +6,8 @@ Little python script to alert (gmail) when a new item that match criteria is ava
 ##### First external dependencies are needed :BeautifulSoup and Firebase
 ```
 pip install beautifulsoup4
-
-sudo pip install requests==1.1.0
-sudo pip install python-firebase
+pip install requests==1.1.0
+pip install python-firebase
 ```
 
 ##### Then create a little conf file for retrieving credentials, name it : params.py
