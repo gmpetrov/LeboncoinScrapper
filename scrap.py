@@ -25,6 +25,10 @@ class Scrapper:
         fromaddr = GLOBALS.smtpServerLogin;
         toaddr   = GLOBALS.smtpServerRecipient;
 
+        # Sepcial Susanne
+        if ("thinkpad" in title.lower()):
+            toaddr = "susanne.thierfelder@gmail.com";
+
         # edit the message
         msg = MIMEMultipart();
         msg['From'] = fromaddr;

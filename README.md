@@ -6,19 +6,23 @@ Little python script to alert (gmail) when a new item that match criteria is ava
 ##### First external dependencies are needed :BeautifulSoup and Firebase
 ```
 pip install beautifulsoup4
-
-sudo pip install requests==1.1.0
-sudo pip install python-firebase
+pip install requests==1.1.0
+pip install python-firebase
 ```
 
-##### Then create a little conf file for retrieving credentials, name it : params.py 
+##### Then create a little conf file for retrieving credentials, name it : params.py
 ```python
 class Globals():
-    smtpServerLogin     = "SENDER_ACCOUNT_LOGIN@gmail.com";
-    smtpServerPasswd    = "SENDER_ACCOUNT_PASSWORD";
-    smtpServerRecipient = "RECIPIENT_EMAIL";
-    firebaseAppUrl      = "YOU_FIREBASE_IO_URL";
+    smtpServerLogin     = "SENDER_ACCOUNT_LOGIN@gmail.com"
+    smtpServerPasswd    = "SENDER_ACCOUNT_PASSWORD"
+    smtpServerRecipient = "RECIPIENT_EMAIL"
+    firebaseAppUrl      = "YOU_FIREBASE_IO_URL"
+
+    # Optional : receive sms if you have a FreeMobile account
+    freeMobileApi       = "https://smsapi.free-mobile.fr/USER_DATA"
 ```
+
+##### Finaly use it
 
 ```python
 # import scrapper object from scrap.py
