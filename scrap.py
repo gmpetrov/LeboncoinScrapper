@@ -25,10 +25,6 @@ class Scrapper:
         fromaddr = GLOBALS.smtpServerLogin;
         toaddr   = GLOBALS.smtpServerRecipient;
 
-        # Sepcial Susanne
-        if ("thinkpad" in title.lower()):
-            toaddr = "susanne.thierfelder@gmail.com";
-
         # edit the message
         msg = MIMEMultipart();
         msg['From'] = fromaddr;
@@ -44,11 +40,12 @@ class Scrapper:
         server.starttls()
         server.login(fromaddr, GLOBALS.smtpServerPasswd)
 
-        # Send the mail
-        server.sendmail(fromaddr, toaddr, msg.as_string())
-
+        # Send mail to recipients
         for email in recipients:
-            server.sendmail(email, toaddr, msg.as_string())
+            server.sendmail(fromaddr, email, msg.as_string())
+
+        if len(recipients) < 1:
+            server.sendmail(fromaddr, toaddr, msg.as_string())
 
         # quit smtp server
         server.quit()
@@ -82,7 +79,7 @@ class Scrapper:
                     return True;
         return False;
 
-    def scrap(self, priceLimit, region=None, recipients=[], args=[]):
+    def scrap(self, priceLimit, region=None, recipients=[], args=[], sms=True):
 
         # Craft the url
         region = (region + '/' if region is not None else '')
@@ -133,7 +130,7 @@ class Scrapper:
 
 
                             # Send sms
-                            if hasattr(GLOBALS, 'freeMobileApi'):
+                            if sms and hasattr(GLOBALS, 'freeMobileApi'):
                                 message = self.createMailBody(title, price, url)
                                 self.sendSms(message);
                 i += 1;
