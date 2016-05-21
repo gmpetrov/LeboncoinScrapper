@@ -83,11 +83,12 @@ class Scrapper:
                     return True;
         return False;
 
-    def scrap(self, priceLimit, region=None, recipients=[], args=[], sms=True):
+    def scrap(self, priceLimit, region=None, recipients=[], args=[], sms=True, category=None):
 
         # Craft the url
         region = (region + '/' if region is not None else '')
-        leboncoinUrl = 'http://www.leboncoin.fr/annonces/offres/ile_de_france/' + region + '?f=a&th=1&q=';
+        category = (category + '/' if category is not None else 'annonces/')
+        leboncoinUrl = 'http://www.leboncoin.fr/' + category + 'offres/ile_de_france/' + region + '?f=a&th=1&q=';
 
         url = leboncoinUrl + "+".join(args);
 
