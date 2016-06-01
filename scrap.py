@@ -27,10 +27,6 @@ class Scrapper:
         fromaddr = GLOBALS.smtpServerLogin
         toaddr = GLOBALS.smtpServerRecipient
 
-        # Sepcial Susanne
-        if ("thinkpad" in title.lower()):
-            toaddr = "susanne.thierfelder@gmail.com"
-
         # edit the message
         msg = MIMEMultipart()
         msg['From'] = fromaddr
@@ -90,20 +86,17 @@ class Scrapper:
         region = (region + '/' if region is not None else '')
         category = (category + '/' if category is not None else 'annonces/')
 
-        leboncoinUrl = 'http://www.leboncoin.fr/' + category + \
+        leboncoinUrl = 'https://www.leboncoin.fr/' + category + \
             'offres/ile_de_france/' + region + '?f=a&th=1&q='
 
         url = leboncoinUrl + "+".join(args) + "&location=" + ",".join(cities)
-
-        # Parse html
-        #html = urlopen(url).read()
 
         resp = requests.get(url)
 
         html = resp.text.encode('utf-8')
 
         soup = BeautifulSoup.BeautifulSoup(html, "html.parser")
-        results = soup.find('ul', attrs={"class": u"tabsContent"})
+        results = soup.find('section', attrs={"class": u"tabsContent"})
 
         if (results is not None):
 
