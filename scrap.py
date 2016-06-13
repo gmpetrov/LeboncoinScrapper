@@ -80,7 +80,7 @@ class Scrapper:
                     return True
         return False
 
-    def scrap(self, priceLimit, region=None, recipients=[], args=[], sms=True, category=None, cities=[]):
+    def scrap(self, priceLimit, region=None, recipients=[], args=[], sms=True, category=None, cities=[], match_all=False):
 
         # Craft the url
         region = (region + '/' if region is not None else '')
@@ -117,7 +117,7 @@ class Scrapper:
                 if (hasattr(div, 'string')):
                     price = parseInt(div.string.strip())
                     lowerCaseTitle = title.lower()
-                    if (price <= priceLimit and all(param in lowerCaseTitle for param in args)):
+                    if (price <= priceLimit and (match_all == True or all(param in lowerCaseTitle for param in args))):
                         # This is a match
 
                         if (self.checkIfExists(url, args[0]) == False):
