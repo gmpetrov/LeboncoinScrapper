@@ -1,13 +1,13 @@
+import json
+import smtplib
+import urllib2
+import hashlib
+import requests
 from params import *
 import bs4 as BeautifulSoup
-# import re
-import smtplib
 from firebase import firebase
-import json
-from email.MIMEMultipart import MIMEMultipart
 from email.MIMEText import MIMEText
-import requests
-import urllib2
+from email.MIMEMultipart import MIMEMultipart
 
 GLOBALS = Globals()
 
@@ -22,6 +22,8 @@ class Scrapper:
 
         self._filters = {}
         self._filters['ventes_immobilieres'] = {'house': 'ret=1'}
+        self.firebase_client = firebase.FirebaseApplication(
+            GLOBALS.firebaseAppUrl, None)
 
     def createMailBody(self, title, price, url):
         return "Alert leboncoin : " + title + " " + str(price) + " euros : " + url
@@ -63,30 +65,22 @@ class Scrapper:
         msg = "+".join(msg)
         urllib2.urlopen(GLOBALS.freeMobileApi + msg.encode('utf-8'))
 
-    # Save a new match
-    def persist(self, url, item):
-        app = firebase.FirebaseApplication(GLOBALS.firebaseAppUrl, None)
-        result = app.post('/' + str(url), item)
+    def create_hash(self, url):
+        return hashlib.sha1(url).hexdigest()
 
-    # Get all the saved match
-    def getHistoryOf(self, name):
-        app = firebase.FirebaseApplication(GLOBALS.firebaseAppUrl, None)
-        results = app.get('/' + str(name), None)
-        data = json.dumps(results)
-        return json.loads(data)
+    # Save a new match
+    def persist(self, item_type, url, item):
+        url_hash = self.create_hash(url)
+        patch_url = '/{type}/{hash}'.format(type=item_type, hash=url_hash)
+        result = self.firebase_client.patch(patch_url, item)
 
     # Check if an item already exists
     def checkIfExists(self, _url, _name):
-        data = self.getHistoryOf(_name)
-        if (data != None):
-            for key in data:
-                url = data[key]['url']
-                if (_url == url):
-                    return True
-        return False
+        url_hash = self.create_hash(_url)
+        item_url = '/{type}/{hash}'.format(type=_name, hash=url_hash)
+        return self.firebase_client.get(item_url, None)
 
     def scrap(self, priceLimit, region=None, recipients=[], args=[], sms=True, category=None, cities=[], match_all=False, filters=None):
-
         # Craft the url
         cat = category
         region = (region + '/' if region is not None else '')
@@ -129,13 +123,15 @@ class Scrapper:
                     if (price <= priceLimit and (match_all == True or all(param in lowerCaseTitle for param in args))):
                         # This is a match
 
-                        if (self.checkIfExists(url, args[0]) == False):
+                        if (self.checkIfExists(url, args[0]) is None):
                             # The item is not present in the db so it's a new
                             # one
 
                             # save the item
                             self.persist(
-                                args[0], {'title': title, 'price': price, 'url': url})
+                                args[0],
+                                url,
+                                {'title': title, 'price': price, 'url': url})
 
                             # Send a notification
                             self.sendMail(title, price, url, recipients)
