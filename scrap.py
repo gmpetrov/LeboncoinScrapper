@@ -33,7 +33,7 @@ class Scrapper:
         html = "<div style='display: block;'>"
         html += "<h1>Alert Leboncoin</h1>"
         html += "<h2>{title} {price} euros</h2>".format(
-            title=title, price=str(price))
+            title=title.encode('utf-8'), price=str(price).encode('utf-8'))
         html += "<h2><a href='{url}'>Check item</a></h2>".format(url=url)
         html += "<img src='{img}'/>".format(img=img)
         html += "</div>"
@@ -140,10 +140,12 @@ class Scrapper:
                 if (hasattr(div, 'string')):
                     price = parseInt(div.string.strip())
                     lowerCaseTitle = title.lower()
-                    if (price <= priceLimit and (match_all == True or all(param in lowerCaseTitle for param in args))):
+                    if (int(price) <= int(priceLimit) and (match_all == True or all(param in lowerCaseTitle for param in args))):
                         # This is a match
 
                         if (self.checkIfExists(url, args[0]) is None):
+                            print price
+                            print priceLimit
                             # The item is not present in the db so it's a new
                             # one
 
