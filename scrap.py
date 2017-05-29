@@ -24,12 +24,23 @@ class Scrapper:
         self._filters['ventes_immobilieres'] = {'house': 'ret=1'}
         self.firebase_client = firebase.FirebaseApplication(
             GLOBALS.firebaseAppUrl, None)
+        self.default_img_url = "https://am21.akamaized.net/tms/cnt/uploads/2016/03/Grumpy-Cat.jpg"
 
-    def createMailBody(self, title, price, url):
+    def createSmsBody(self, title, price, url):
         return "Alert leboncoin : " + title + " " + str(price) + " euros : " + url
 
+    def createMailBody(self, title, price, url, img):
+        html = "<div style='display: block;'>"
+        html += "<h1>Alert Leboncoin</h1>"
+        html += "<h2>{title} {price} euros</h2>".format(
+            title=title, price=str(price))
+        html += "<h2><a href='{url}'>Check item</a></h2>".format(url=url)
+        html += "<img src='{img}'/>".format(img=img)
+        html += "</div>"
+        return html
+
     # Send a mail when there is a match
-    def sendMail(self, title, price, url, recipients):
+    def sendMail(self, title, price, url, recipients, img):
 
         fromaddr = GLOBALS.smtpServerLogin
         toaddr = GLOBALS.smtpServerRecipient
@@ -40,9 +51,10 @@ class Scrapper:
         msg['To'] = toaddr
         msg['Subject'] = title
 
-        body = self.createMailBody(title, price, url)
+        body = self.createMailBody(title, price, url, img)
 
-        msg.attach(MIMEText(body.encode('utf-8'), 'plain'))
+        # msg.attach(MIMEText(body.encode('utf-8'), 'plain'))
+        msg.attach(MIMEText(body, 'html'))
 
         # Init the smtp server
         server = smtplib.SMTP('smtp.gmail.com', 587)
@@ -115,7 +127,15 @@ class Scrapper:
                 div = results[i].find('h3', attrs={"class": u"item_price"})
 
                 # Get the url
-                url = results[i]['href']
+                url = "https:" + results[i]['href']
+
+                # Get image
+                img = self.default_img_url
+                try:
+                    img = "http:" + results[i].find('span', attrs={"class": "lazyload"})[
+                        'data-imgsrc']
+                except:
+                    pass
 
                 if (hasattr(div, 'string')):
                     price = parseInt(div.string.strip())
@@ -134,11 +154,11 @@ class Scrapper:
                                 {'title': title, 'price': price, 'url': url})
 
                             # Send a notification
-                            self.sendMail(title, price, url, recipients)
+                            self.sendMail(title, price, url, recipients, img)
 
                             # Send sms
                             if sms and hasattr(GLOBALS, 'freeMobileApi'):
-                                message = self.createMailBody(
+                                message = self.createSmsBody(
                                     title, price, url)
                                 self.sendSms(message)
                 i += 1
