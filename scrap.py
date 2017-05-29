@@ -18,6 +18,11 @@ def parseInt(string):
 
 class Scrapper:
 
+    def __init__(self):
+
+        self._filters = {}
+        self._filters['ventes_immobilieres'] = {'house': 'ret=1'}
+
     def createMailBody(self, title, price, url):
         return "Alert leboncoin : " + title + " " + str(price) + " euros : " + url
 
@@ -80,9 +85,10 @@ class Scrapper:
                     return True
         return False
 
-    def scrap(self, priceLimit, region=None, recipients=[], args=[], sms=True, category=None, cities=[], match_all=False):
+    def scrap(self, priceLimit, region=None, recipients=[], args=[], sms=True, category=None, cities=[], match_all=False, filters=None):
 
         # Craft the url
+        cat = category
         region = (region + '/' if region is not None else '')
         category = (category + '/' if category is not None else 'annonces/')
 
@@ -90,6 +96,9 @@ class Scrapper:
             'offres/ile_de_france/' + region + '?f=a&th=1&q='
 
         url = leboncoinUrl + "+".join(args) + "&location=" + ",".join(cities)
+
+        if filters is not None:
+            url += "&" + "".join(self._filters[cat][f] for f in filters)
 
         resp = requests.get(url)
 
