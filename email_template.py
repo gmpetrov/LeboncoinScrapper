@@ -286,7 +286,7 @@ template = '''
                         <table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border-spacing:0px;" align="center" border="0">
                           <tbody>
                             <tr>
-                              <td style="width:150px;"><img alt="" title="" height="auto" src="{img}" style="border:none;border-radius:0px;display:block;outline:none;text-decoration:none;width:100%;height:auto;" width="150"></td>
+                              <td style="width:150px;"><img alt="" title="" height="auto" src="{img}" style="border:none;border-radius:0px;display:block;outline:none;text-decoration:none;width:100%;height:auto;" width="200"></td>
                             </tr>
                           </tbody>
                         </table>
