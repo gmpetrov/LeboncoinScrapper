@@ -22,26 +22,25 @@ def parseInt(string):
 class Scrapper:
 
     def __init__(self):
-
-        self._filters = {}
-        self._filters['ventes_immobilieres'] = {'house': 'ret=1'}
         self.firebase_client = firebase.FirebaseApplication(
             GLOBALS.firebaseAppUrl, None)
         self.default_img_url = "https://am21.akamaized.net/tms/cnt/uploads/2016/03/Grumpy-Cat.jpg"
+        self._baseUrl = "https://www.leboncoin.fr/{category}/offres/{region}?f=a&th=1&q="
+        self._filters = {
+            "min_year": "rs",
+            "max_year": "re",
+            "cm3": "ccs"
+        }
 
     def createSmsBody(self, title, price, url):
         return "Alert leboncoin : " + title + " " + str(price) + " euros : " + url
 
     def createMailBody(self, title, price, url, img):
-        # html = "<div style='display: block;'>"
-        # html += "<h1>Alert Leboncoin</h1>"
-        # html += "<h2>{title} {price} euros</h2>".format(
-        #     title=title.encode('utf-8'), price=str(price).encode('utf-8'))
-        # html += "<h2><a href='{url}'>Check item</a></h2>".format(url=url)
-        # html += "<img src='{img}'/>".format(img=img)
-        # html += "</div>"
-        return template.format(title=title.encode(
-            'utf-8'), price=str(price).encode('utf-8'), url=url.encode('utf-8'), img=img.encode('utf-8'))
+        return template.format(
+            title=title.encode('utf-8'),
+            price=str(price).encode('utf-8'),
+            url=url.encode('utf-8'),
+            img=img.encode('utf-8'))
 
     # Send a mail when there is a match
     def sendMail(self, title, price, url, recipients, img):
@@ -57,7 +56,6 @@ class Scrapper:
 
         body = self.createMailBody(title, price, url, img)
 
-        # msg.attach(MIMEText(body.encode('utf-8'), 'plain'))
         msg.attach(MIMEText(body, 'html', 'utf-8'))
 
         # Init the smtp server
@@ -96,39 +94,45 @@ class Scrapper:
         item_url = '/{type}/{hash}'.format(type=_name, hash=url_hash)
         return self.firebase_client.get(item_url, None)
 
-    def scrap(self, priceLimit, region=None, recipients=[], args=[], sms=True, category=None, cities=[], match_all=False, filters=None):
-        # Craft the url
-        cat = category
-        region = (region + '/' if region is not None else '')
-        category = (category + '/' if category is not None else 'annonces/')
+    def getResults(self, url):
+        resp = requests.get(url)
+        html = resp.text.encode('utf-8')
+        soup = BeautifulSoup.BeautifulSoup(html, "html.parser")
+        return soup.find('section', attrs={"class": u"tabsContent"})
 
-        leboncoinUrl = 'https://www.leboncoin.fr/' + category + \
-            'offres/ile_de_france/' + region + '?f=a&th=1&q='
+    # check real filter name in the filter map
+    # then creaft filter in the form filter=value
+    def craftFilter(self, expression):
+        name, value = expression.split('=')
+        return "{name}={value}".format(name=self._filters[name], value=value)
+
+    def scrap(self, priceLimit, region='ile_de_france', category='annonces', args=[], filters=[], cities=[], match_all=False, recipients=[], sms=True):
+
+        # Craft the url
+        leboncoinUrl = self._baseUrl.format(category=category, region=region)
 
         url = leboncoinUrl + "+".join(args) + "&location=" + ",".join(cities)
 
-        if filters is not None:
-            url += "&" + "".join(self._filters[cat][f] for f in filters)
+        url += "&" + "".join(self.craftFilter(f) for f in filters)
 
-        resp = requests.get(url)
-
-        html = resp.text.encode('utf-8')
-
-        soup = BeautifulSoup.BeautifulSoup(html, "html.parser")
-        results = soup.find('section', attrs={"class": u"tabsContent"})
+        # get items
+        results = self.getResults(url)
 
         if (results is not None):
 
             results = results.findAll('a')
-            i = 0
             # Iterating the html parsing result
-            while (i < len(results)):
+            for i in xrange(0, len(results)):
 
                 # Get the item title
                 title = results[i]['title']
 
                 # Get the item price
-                div = results[i].find('h3', attrs={"class": u"item_price"})
+                try:
+                    price_text = results[i].find('h3', attrs={"class": u"item_price"}).text.strip()
+                    price = parseInt(price_text)
+                except:
+                    price = 0
 
                 # Get the url
                 url = "https:" + results[i]['href']
@@ -136,33 +140,31 @@ class Scrapper:
                 # Get image
                 img = self.default_img_url
                 try:
-                    img = "http:" + results[i].find('span', attrs={"class": "lazyload"})[
-                        'data-imgsrc']
+                    img = "http:" + results[i].find(
+                                'span',
+                                attrs={"class": "lazyload"})['data-imgsrc']
                 except:
                     pass
 
-                if (hasattr(div, 'string')):
-                    price = parseInt(div.string.strip())
-                    lowerCaseTitle = title.lower()
-                    if (int(price) <= int(priceLimit) and (match_all == True or all(param in lowerCaseTitle for param in args))):
-                        # This is a match
+                lowerCaseTitle = title.lower()
+                if (price <= int(priceLimit) and (match_all == True or all(param in lowerCaseTitle for param in args))):
+                    # This is a match
 
-                        if (self.checkIfExists(url, args[0]) is None):
-                            # The item is not present in the db so it's a new
-                            # one
+                    if (self.checkIfExists(url, args[0]) is None):
+                        # The item is not present in the db so it's a new
+                        # one
 
-                            # save the item
-                            self.persist(
-                                args[0],
-                                url,
-                                {'title': title, 'price': price, 'url': url})
+                        # save the item
+                        self.persist(
+                            args[0],
+                            url,
+                            {'title': title, 'price': price, 'url': url})
 
-                            # Send a notification
-                            self.sendMail(title, price, url, recipients, img)
+                        # Send a notification
+                        self.sendMail(title, price, url, recipients, img)
 
-                            # Send sms
-                            if sms and hasattr(GLOBALS, 'freeMobileApi'):
-                                message = self.createSmsBody(
-                                    title, price, url)
-                                self.sendSms(message)
-                i += 1
+                        # Send sms
+                        if sms and hasattr(GLOBALS, 'freeMobileApi'):
+                            message = self.createSmsBody(
+                                title, price, url)
+                            self.sendSms(message)
