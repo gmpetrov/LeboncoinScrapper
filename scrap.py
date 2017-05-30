@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import json
 import smtplib
 import urllib2
@@ -8,6 +10,7 @@ import bs4 as BeautifulSoup
 from firebase import firebase
 from email.MIMEText import MIMEText
 from email.MIMEMultipart import MIMEMultipart
+from email_template import template
 
 GLOBALS = Globals()
 
@@ -30,14 +33,15 @@ class Scrapper:
         return "Alert leboncoin : " + title + " " + str(price) + " euros : " + url
 
     def createMailBody(self, title, price, url, img):
-        html = "<div style='display: block;'>"
-        html += "<h1>Alert Leboncoin</h1>"
-        html += "<h2>{title} {price} euros</h2>".format(
-            title=title.encode('utf-8'), price=str(price).encode('utf-8'))
-        html += "<h2><a href='{url}'>Check item</a></h2>".format(url=url)
-        html += "<img src='{img}'/>".format(img=img)
-        html += "</div>"
-        return html
+        # html = "<div style='display: block;'>"
+        # html += "<h1>Alert Leboncoin</h1>"
+        # html += "<h2>{title} {price} euros</h2>".format(
+        #     title=title.encode('utf-8'), price=str(price).encode('utf-8'))
+        # html += "<h2><a href='{url}'>Check item</a></h2>".format(url=url)
+        # html += "<img src='{img}'/>".format(img=img)
+        # html += "</div>"
+        return template.format(title=title.encode(
+            'utf-8'), price=str(price).encode('utf-8'), url=url.encode('utf-8'), img=img.encode('utf-8'))
 
     # Send a mail when there is a match
     def sendMail(self, title, price, url, recipients, img):
@@ -54,7 +58,7 @@ class Scrapper:
         body = self.createMailBody(title, price, url, img)
 
         # msg.attach(MIMEText(body.encode('utf-8'), 'plain'))
-        msg.attach(MIMEText(body, 'html'))
+        msg.attach(MIMEText(body, 'html', 'utf-8'))
 
         # Init the smtp server
         server = smtplib.SMTP('smtp.gmail.com', 587)
@@ -144,8 +148,6 @@ class Scrapper:
                         # This is a match
 
                         if (self.checkIfExists(url, args[0]) is None):
-                            print price
-                            print priceLimit
                             # The item is not present in the db so it's a new
                             # one
 
