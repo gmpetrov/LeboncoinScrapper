@@ -140,9 +140,7 @@ class Scrapper:
                 # Get image
                 img = self.default_img_url
                 try:
-                    img = "http:" + results[i].find(
-                                'span',
-                                attrs={"class": "lazyload"})['data-imgsrc']
+                    img = results[i].find('span', attrs={"class": "lazyload"})['data-imgsrc']
                 except:
                     pass
 
